@@ -1,5 +1,7 @@
 #pragma once
 
+int PlayersJumpedFromBus = 0;
+
 namespace Abilities
 {
 	inline void PlayerRespawnThread(AFortPlayerControllerAthena* DeadPlayerController, FVector DeadPawnLocation)
@@ -16,6 +18,8 @@ namespace Abilities
 		NewCheatManager->RespawnPlayer();
 		NewCheatManager->RespawnPlayerServer();
 	}
+
+	AFortGameStateAthena* GameState;
 
 	inline std::vector<ABuildingSMActor*> ExistingBuildings;
 
@@ -52,7 +56,34 @@ namespace Abilities
 
 		return nullptr;
 	}
+	template <typename Class>
+	static FFortItemEntry FindItemInInventory(AFortPlayerControllerAthena* PC, bool& bFound)
+	{
 
+		auto ret = FFortItemEntry();
+
+		auto& ItemInstances = PC->WorldInventory->Inventory.ItemInstances;
+
+		bFound = false;
+
+		for (int i = 0; i < ItemInstances.Num(); i++)
+		{
+			auto ItemInstance = ItemInstances[i];
+
+			if (!ItemInstance)
+				continue;
+
+			auto Def = ItemInstance->ItemEntry.ItemDefinition;
+
+			if (Def && Def->IsA(Class::StaticClass()))
+			{
+				bFound = true;
+				ret = ItemInstance->ItemEntry;
+			}
+		}
+
+		return ret;
+	}
 	inline void InternalServerTryActiveAbility(UAbilitySystemComponent* AbilitySystemComponent, FGameplayAbilitySpecHandle Handle, bool InputPressed, FPredictionKey PredictionKey, FGameplayEventData* TriggerEventData)
 	{
 		FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(AbilitySystemComponent, Handle);
@@ -73,8 +104,172 @@ namespace Abilities
 			Core::MarkAbilitySpecDirty(AbilitySystemComponent, *Spec);
 		}
 	}
+	inline UFortEngine* GetFortEngine()
+	{
+		static auto FortEngine = UObject::FindObject<UFortEngine>("FortEngine_");
+		return FortEngine;
+	}
+	inline UWorld* GetWorld()
+	{
+		return GetFortEngine()->GameViewport->World;
+	}
+	inline UGameplayStatics* GetGameplayStatics()
+	{
+		return reinterpret_cast<UGameplayStatics*>(UGameplayStatics::StaticClass());
+	}
+	constexpr auto PI = 3.1415926535897932f;
 
+	static void sinCos(float* ScalarSin, float* ScalarCos, float Value)
+	{
+		float quotient = (0.31830988618f * 0.5f) * Value;
+		if (Value >= 0.0f)
+		{
+			quotient = (float)((int)(quotient + 0.5f));
+		}
+		else
+		{
+			quotient = (float)((int)(quotient - 0.5f));
+		}
+		float y = Value - (2.0f * PI) * quotient;
 
+		float sign;
+		if (y > 1.57079632679f)
+		{
+			y = PI - y;
+			sign = -1.0f;
+		}
+		else if (y < -1.57079632679f)
+		{
+			y = -PI - y;
+			sign = -1.0f;
+		}
+		else
+		{
+			sign = +1.0f;
+		}
+
+		float y2 = y * y;
+
+		*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
+
+		float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
+		*ScalarCos = sign * p;
+	}
+	static auto RotToQuat(FRotator Rotator)
+	{
+		const float DEG_TO_RAD = PI / (180.f);
+		const float DIVIDE_BY_2 = DEG_TO_RAD / 2.f;
+		float SP, SY, SR;
+		float CP, CY, CR;
+
+		sinCos(&SP, &CP, Rotator.Pitch * DIVIDE_BY_2);
+		sinCos(&SY, &CY, Rotator.Yaw * DIVIDE_BY_2);
+		sinCos(&SR, &CR, Rotator.Roll * DIVIDE_BY_2);
+
+		FQuat RotationQuat;
+		RotationQuat.X = CR * SP * SY - SR * CP * CY;
+		RotationQuat.Y = -CR * SP * CY - SR * CP * SY;
+		RotationQuat.Z = CR * CP * SY - SR * SP * CY;
+		RotationQuat.W = CR * CP * CY + SR * SP * SY;
+
+		return RotationQuat;
+	}
+	static AActor* SpawnActorTrans(UClass* StaticClass, FTransform SpawnTransform, AActor* Owner = nullptr, ESpawnActorCollisionHandlingMethod Flags = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn)
+	{
+		AActor* FirstActor = GetGameplayStatics()->STATIC_BeginDeferredActorSpawnFromClass(GetWorld(), StaticClass, SpawnTransform, Flags, Owner);
+
+		if (FirstActor)
+		{
+			AActor* FinalActor = GetGameplayStatics()->STATIC_FinishSpawningActor(FirstActor, SpawnTransform);
+
+			if (FinalActor)
+			{
+				return FinalActor;
+			}
+		}
+
+		return nullptr;
+	}
+
+	inline AActor* SpawnActorByClass(UClass* ActorClass, FVector Location = { 0.0f, 0.0f, 0.0f }, FRotator Rotation = { 0, 0, 0 }, AActor* Owner = nullptr, ESpawnActorCollisionHandlingMethod Flags = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn)
+	{
+		FTransform SpawnTransform;
+
+		SpawnTransform.Translation = Location;
+		SpawnTransform.Scale3D = FVector{ 1, 1, 1 };
+		SpawnTransform.Rotation = RotToQuat(Rotation);
+
+		return SpawnActorTrans(ActorClass, SpawnTransform, Owner, Flags);
+	}
+	inline UFortWorldItem* GetInstanceFromGuid(AController* PC, const FGuid& ToFindGuid)
+	{
+		auto& ItemInstances = ((AFortPlayerController*)PC)->WorldInventory->Inventory.ItemInstances;
+		for (int j = 0; j < ItemInstances.Num(); j++)
+		{
+			auto ItemInstance = ItemInstances[j];
+
+			if (!ItemInstance)
+				continue;
+
+			auto Guid = ItemInstance->ItemEntry.ItemGuid;
+
+			if (ToFindGuid == Guid)
+			{
+				return ItemInstance;
+			}
+		}
+
+		return nullptr;
+	}
+
+	inline AFortWeapon* EquipWeaponDefinition(AFortPlayerControllerAthena* PlayerController, UFortWeaponItemDefinition* Definition, FGuid Guid, bool bEquipWithMaxAmmo = false)
+	{
+		if (!PlayerController) return 0;
+		if (!Definition) return 0;
+
+		auto Pawn = (AFortPlayerPawnAthena*)PlayerController->Pawn;
+		if (!Pawn) return 0;
+
+		auto Instance = GetInstanceFromGuid(PlayerController, Guid);
+		if (!Instance) return 0;
+
+		auto WeaponClass = Definition->GetWeaponActorClass();
+		if (!WeaponClass) return 0;
+
+		AFortWeapon* Weapon;
+
+		if (WeaponClass->GetFullName() == "BlueprintGeneratedClass TrapTool.TrapTool_C")
+		{
+			Weapon = (AFortWeapon*)Core::SpawnActor(WeaponClass, {}, PlayerController);
+			if (!Weapon) return 0;
+
+			Weapon->bReplicates = true;
+			Weapon->bOnlyRelevantToOwner = false;
+			((AFortTrapTool*)Weapon)->ItemDefinition = Definition;
+		}
+		else
+		{
+			Weapon = Pawn->EquipWeaponDefinition(Definition, Guid);
+			if (!Weapon) return 0;
+
+			if (bEquipWithMaxAmmo)
+				Weapon->AmmoCount = Weapon->GetBulletsPerClip();
+
+			Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
+			Weapon->OnRep_AmmoCount(Instance->ItemEntry.LoadedAmmo);
+		}
+
+		Weapon->WeaponData = Definition;
+		Weapon->ItemEntryGuid = Guid;
+		Weapon->Owner = Pawn;
+		Weapon->SetOwner(Pawn);
+		Weapon->OnRep_ReplicatedWeaponData();
+		Weapon->ClientGivenTo(Pawn);
+		Pawn->ClientInternalEquipWeapon(Weapon);
+		Pawn->OnRep_CurrentWeapon();
+
+		return Weapon;
+	}
 	void Initialize(UObject* Object, UFunction* Function, void* Parameters, std::string ObjectName, std::string FunctionName)
 	{
 		if (!Core::bStartedMatch || !Core::GetWorld()->NetDriver) return;
@@ -192,13 +387,20 @@ namespace Abilities
 		{
 			auto PlayerController = (AFortPlayerControllerAthena*)Object;
 			auto Params = (AFortPlayerControllerAthena_ServerAttemptAircraftJump_Params*)Parameters;
+			auto GameState = (AFortGameStateAthena*)Core::GetWorld()->AuthorityGameMode->GameState;
 
 			auto Aircraft = ((AFortGameStateAthena*)Core::GetWorld()->GameState)->GetAircraft(0);
 			if (!Aircraft) return;
 
 			Core::InitializePawn(PlayerController, Aircraft->K2_GetActorLocation());
+			PlayersJumpedFromBus++;
+
 
 			Aircraft->PlayEffectsForPlayerJumped();
+
+			GameState->SafeZonePhase = false;
+
+
 		}
 		else if (strstr(FunctionName.c_str(), "OnAircraftExitedDropZone"))
 		{
@@ -235,6 +437,7 @@ namespace Abilities
 		{
 			auto PlayerController = (AFortPlayerControllerAthena*)Object;
 			auto Params = (AFortPlayerController_ServerCreateBuildingActor_Params*)Parameters;
+			auto CurrentBuildClass = Params->BuildingClassData.BuildingClass;
 
 			auto GameState = (AFortGameStateAthena*)Core::GetWorld()->GameState;
 
@@ -245,7 +448,8 @@ namespace Abilities
 			{
 				BuildingActor->DynamicBuildingPlacementType = EDynamicBuildingPlacementType::DestroyAnythingThatCollides;
 				BuildingActor->SetMirrored(Params->bMirrored);
-				BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, PlayerController);
+				BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, PlayerController, 0);
+				Inventory::RemoveBuildingMaterials(PlayerController, CurrentBuildClass);
 				BuildingActor->Team = ((AFortPlayerStateAthena*)PlayerController->PlayerState)->TeamIndex;
 				return;
 			}
@@ -263,6 +467,8 @@ namespace Abilities
 
 			Params->BuildingActorToRepair->RepairBuilding(PlayerController, 20); //todo: not hardcode it here
 		}
+
+
 		else if (strstr(FunctionName.c_str(), "ServerAttemptInteract"))
 		{
 			auto PlayerController = (AFortPlayerControllerAthena*)Object;
@@ -312,6 +518,129 @@ namespace Abilities
 			}
 
 			return;
+		}
+
+		else if (strstr(FunctionName.c_str(), "ServerBeginEditingBuildingActor"))
+		{
+			auto PlayerController = (AFortPlayerControllerAthena*)Object;
+			bool bFound = false;
+			auto Pawn = (AFortPlayerPawnAthena*)PlayerController->Pawn;
+			auto Params = (AFortPlayerController_ServerBeginEditingBuildingActor_Params*)Parameters;
+			auto EditToolEntry = FindItemInInventory<UFortEditToolItemDefinition>(PlayerController, bFound);
+			if (PlayerController && Pawn && Params->BuildingActorToEdit && bFound)
+			{
+				auto EditTool = (AFortWeap_EditingTool*)EquipWeaponDefinition(PlayerController, (UFortWeaponItemDefinition*)EditToolEntry.ItemDefinition, EditToolEntry.ItemGuid);
+
+				if (EditTool)
+				{
+					EditTool->EditActor = Params->BuildingActorToEdit;
+					EditTool->OnRep_EditActor();
+					Params->BuildingActorToEdit->EditingPlayer = (AFortPlayerStateZone*)PlayerController->PlayerState;
+					Params->BuildingActorToEdit->OnRep_EditingPlayer();
+					return;
+
+				}
+			}
+		}
+		else if (strstr(FunctionName.c_str(), "ServerEditBuildingActor"))
+		{
+			auto Params = (AFortPlayerController_ServerEditBuildingActor_Params*)Parameters;
+			auto PC = (AFortPlayerControllerAthena*)Object;
+
+			if (PC && Params)
+			{
+				auto BuildingActor = Params->BuildingActorToEdit;
+				auto NewBuildingClass = Params->NewBuildingClass;
+				auto RotIterations = Params->RotationIterations;
+
+				if (BuildingActor && NewBuildingClass)
+				{
+					auto location = BuildingActor->K2_GetActorLocation();
+					auto rotation = BuildingActor->K2_GetActorRotation();
+
+					if (BuildingActor->BuildingType != EFortBuildingType::Wall)
+					{
+						int Yaw = (int(rotation.Yaw) + 360) % 360;
+
+						if (Yaw > 80 && Yaw < 100) // 90
+						{
+							if (RotIterations == 1)
+								location = location + FVector(-256, 256, 0);
+							else if (RotIterations == 2)
+								location = location + FVector(-512, 0, 0);
+							else if (RotIterations == 3)
+								location = location + FVector(-256, -256, 0);
+						}
+						else if (Yaw > 170 && Yaw < 190) // 180
+						{
+							if (RotIterations == 1)
+								location = location + FVector(-256, -256, 0);
+							else if (RotIterations == 2)
+								location = location + FVector(0, -512, 0);
+							else if (RotIterations == 3)
+								location = location + FVector(256, -256, 0);
+						}
+						else if (Yaw > 260 && Yaw < 280) // 270
+						{
+							if (RotIterations == 1)
+								location = location + FVector(256, -256, 0);
+							else if (RotIterations == 2)
+								location = location + FVector(512, 0, 0);
+							else if (RotIterations == 3)
+								location = location + FVector(256, 256, 0);
+						}
+						else // 0 - 360
+						{
+							if (RotIterations == 1)
+								location = location + FVector(256, 256, 0);
+							else if (RotIterations == 2)
+								location = location + FVector(0, 512, 0);
+							else if (RotIterations == 3)
+								location = location + FVector(-256, 256, 0);
+						}
+					}
+
+					rotation.Yaw += 90 * RotIterations;
+
+					auto bWasInitiallyBuilding = BuildingActor->bIsInitiallyBuilding;
+					auto HealthPercent = BuildingActor->GetHealthPercent();
+					auto old_Team = BuildingActor->Team;
+
+					BuildingActor->SilentDie();
+
+					if (auto NewBuildingActor = (ABuildingSMActor*)SpawnActorByClass(NewBuildingClass, location, rotation, PC))
+					{
+						if (!bWasInitiallyBuilding)
+							NewBuildingActor->ForceBuildingHealth(NewBuildingActor->GetMaxHealth() * HealthPercent);
+
+						NewBuildingActor->SetMirrored(Params->bMirrored);
+						NewBuildingActor->InitializeKismetSpawnedBuildingActor(NewBuildingActor, PC, 0);
+						NewBuildingActor->Team = old_Team; //set team for build
+						return;
+					}
+				}
+			}
+		}
+		else if (strstr(FunctionName.c_str(), "ServerEndEditingBuildingActor"))
+		{
+			auto Params = (AFortPlayerController_ServerEndEditingBuildingActor_Params*)Parameters;
+			auto PC = (AFortPlayerControllerAthena*)Object;
+
+			if (!PC->IsInAircraft() && Params->BuildingActorToStopEditing)
+			{
+				Params->BuildingActorToStopEditing->EditingPlayer = nullptr;
+				Params->BuildingActorToStopEditing->OnRep_EditingPlayer();
+
+				auto EditTool = (AFortWeap_EditingTool*)((APlayerPawn_Athena_C*)PC->Pawn)->CurrentWeapon;
+
+				if (EditTool)
+				{
+					EditTool->bEditConfirmed = true;
+					EditTool->EditActor = nullptr;
+					EditTool->OnRep_EditActor();
+					return;
+				}
+			}
 		}
 		else if (strstr(FunctionName.c_str(), "ServerPlayEmoteItem"))
 		{
