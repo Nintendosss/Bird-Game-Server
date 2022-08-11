@@ -611,7 +611,44 @@ namespace Inventory
             }
         }
     }
+    inline void RemoveBuildingMaterials(AFortPlayerControllerAthena* PC, UClass* BuildingClass, int Amount = 10)
+    {
+        auto BuildingClassName = BuildingClass->GetName();
 
+        auto Inventory = PC->WorldInventory;
+
+        for (int i = 0; i < Inventory->Inventory.ReplicatedEntries.Num(); i++)
+        {
+            auto ItemDefinitionName = Inventory->Inventory.ReplicatedEntries[i].ItemDefinition->GetName();
+
+            if (strstr(BuildingClassName.c_str(), "W1") && strstr(ItemDefinitionName.c_str(), "WoodItemData"))
+            {
+                Inventory->Inventory.ReplicatedEntries[i].Count -= Amount;
+                Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+                Update(PC, 0, true);
+                return;
+            }
+
+            if (strstr(BuildingClassName.c_str(), "S1") && strstr(ItemDefinitionName.c_str(), "StoneItemData"))
+            {
+                Inventory->Inventory.ReplicatedEntries[i].Count -= Amount;
+                Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+                Update(PC, 0, true);
+                return;
+            }
+
+            if (strstr(BuildingClassName.c_str(), "M1") && strstr(ItemDefinitionName.c_str(), "MetalItemData"))
+            {
+                Inventory->Inventory.ReplicatedEntries[i].Count -= Amount;
+                Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+                Update(PC, 0, true);
+                return;
+            }
+        }
+    }
 	void Initialize(AFortPlayerControllerAthena* PlayerController)
 	{
         if (!PlayerController) return;
