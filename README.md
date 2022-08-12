@@ -5,3 +5,6 @@ This is an Fortnite Gameserver for 7.30! Please do not leak it or someone will g
 
 
 Cr to Ozne For Some Code i Stole From Ozraider!
+
+
+Nintendosss Is gay
