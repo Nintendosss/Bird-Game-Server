@@ -1,5 +1,6 @@
 #pragma once
 
+
 namespace Inventory
 {
     static inline std::vector<std::string> WeaponItemDefinitionArray = {
@@ -97,10 +98,58 @@ namespace Inventory
         "/Game/Athena/Items/Weapons/WID_Assault_Infantry_Athena_SR.WID_Assault_Infantry_Athena_SR"
     };
 
+    static inline std::vector<std::string> ShotgunLateGame = {
+        "/Game/Athena/Items/Weapons/WID_Assault_Heavy_Athena_SR_Ore_T03.WID_Assault_Heavy_Athena_SR_Ore_T03",
+        "/Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03",
+        "/Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03",
+        "/Game/Athena/Items/Weapons/WID_Shotgun_SemiAuto_Athena_VR_Ore_T03.WID_Shotgun_SemiAuto_Athena_VR_Ore_T03",
+        "/Game/Athena/Items/Weapons/WID_Shotgun_SlugFire_Athena_SR.WID_Shotgun_SlugFire_Athena_SR",
+        "/Game/Athena/Items/Weapons/WID_Shotgun_BreakBarrel_Athena_SR_Ore_T03.WID_Shotgun_BreakBarrel_Athena_SR_Ore_T03",
+    };
+
+    static inline std::vector<std::string> ARLateGame = {
+        "/Game/Athena/Items/Weapons/WID_Assault_Heavy_Athena_SR_Ore_T03.WID_Assault_Heavy_Athena_SR_Ore_T03",
+        "/Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"
+        "/Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"
+    };
+
+    static inline std::vector<std::string> MiscLateGame = {
+        "/Game/Athena/Items/Weapons/WID_Pistol_HandCannon_Athena_SR_Ore_T03.WID_Pistol_HandCannon_Athena_SR_Ore_T03",
+        "/Game/Athena/Items/Weapons/WID_Launcher_Grenade_Athena_SR_Ore_T03.WID_Launcher_Grenade_Athena_SR_Ore_T03"
+        "/Game/Athena/Items/Weapons/WID_Sniper_NoScope_Athena_R_Ore_T03.WID_Sniper_NoScope_Athena_R_Ore_T03"
+    };
+
+    static inline std::vector<std::string> ConsumablesLateGame = {
+        "/Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"
+        "/Game/Athena/Items/Consumables/StickyGrenade/Athena_StickyGrenade.Athena_StickyGrenade",
+        "/Game/Athena/Items/Consumables/SmokeGrenade/Athena_SmokeGrenade.Athena_SmokeGrenade",
+        "/Game/Athena/Items/Consumables/ShockwaveGrenade/Athena_ShockGrenade.Athena_ShockGrenade",
+        "/Game/Athena/Items/Consumables/KnockGrenade/Athena_KnockGrenade.Athena_KnockGrenade",
+        "/Game/Athena/Items/Consumables/Grenade/Athena_Grenade.Athena_Grenade",
+        "/Game/Athena/Items/Consumables/GasGrenade/Athena_GasGrenade.Athena_GasGrenade",
+        "/Game/Athena/Items/Consumables/FireworksMortar/Athena_FireworksMortar.Athena_FireworksMortar",
+        "/Game/Athena/Items/Consumables/DanceGrenade/Athena_DanceGrenade.Athena_DanceGrenade",
+        "/Game/Athena/Items/Consumables/C4/Athena_C4.Athena_C4",
+        "/Game/Athena/Items/Consumables/BoomBox/BoomBox_Athena.BoomBox_Athena",
+        "/Game/Athena/Items/Consumables/Medkit/Athena_Medkit.Athena_Medkit",
+        "/Game/Athena/Items/Consumables/SuperMedkit/Athena_SuperMedkit.Athena_SuperMedkit",
+        "/Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff",
+        "/Game/Athena/Items/Consumables/Shields/Athena_Shields.Athena_Shields",
+        "/Game/Athena/Items/Consumables/Bush/Athena_Bush.Athena_Bush",
+        "/Game/Athena/Items/Consumables/Bandage/Athena_Bandage.Athena_Bandage",
+        "/Game/Athena/Items/Consumables/Balloons/Athena_Balloons_Consumable.Athena_Balloons_Consumable",
+        "/Game/Athena/Items/Consumables/Balloons/Athena_Balloons.Athena_Balloons"
+    };
+
     inline UFortWeaponItemDefinition* GetRandomWeapon()
     {
         return UObject::FindObjectFast<UFortWeaponItemDefinition>(WeaponItemDefinitionArray[rand() % WeaponItemDefinitionArray.size()]);
     }
+
+   // inline UFortWeaponItemDefinition* GetRandomWeaponLateGame()
+  //  {
+      //  return UObject::FindObjectFast<UFortWeaponItemDefinition>(LateGameLoot[rand() % LateGameLoot .size()]);
+  //  }
 
 
     static inline std::vector<std::string> ConsumableItemDefinitionArray = {
@@ -142,6 +191,12 @@ namespace Inventory
         "/Game/Athena/Items/Consumables/Balloons/Athena_Balloons.Athena_Balloons"
     };
 
+    static inline std::vector<std::string> ResourcePool = {
+        "/Game/Items/ResourcePickups/WoodItemData.WoodItemData",
+        "/Game/Items/ResourcePickups/StoneItemData.StoneItemData",
+        "/Game/Items/ResourcePickups/MetalItemData.MetalItemData"
+    };
+
     inline UFortWeaponItemDefinition* GetRandomConsumable()
     {
         return UObject::FindObjectFast<UFortWeaponItemDefinition>(ConsumableItemDefinitionArray[rand() % ConsumableItemDefinitionArray.size()]);
@@ -151,30 +206,81 @@ namespace Inventory
     {
         static std::vector<FVector> Locations = {
 
-                   { 24426, 37710, 25000 }, // retail row
-                   { 50018, 73844, 17525 }, // lonely lodge
-                   { -75353, -8694, 4354 }, // lucky landing
-                   { 79710, 15677, 17525 }, // tomato town
-                   { 86766, -83071, 17525 }, // pleasant park
-                   { -35037, -463, 13242 }, // fatal fields
-                   { 83375, 50856, 17525 }, // Wailing Woods
-                   { 83375, 50856, 17525 }, // Wailing Woods Duplicate
-                   { 83375, 50856, 17525 }, // Wailing Woods Duplicate
-                   { 83375, 50856, 17525 }, // Wailing Woods Duplicate
-                   { 35000, -60121, 20525 }, // Tilted Towers
-                   { 35000, -60121, 20525 }, // Tilted Towers Duplicate
-                   { 35000, -60121, 20525 }, // Tilted Towers Duplicate
-                   { 35000, -60121, 20525 }, // Tilted Towers Duplicate
-                   { 5000, -60121, 10748 }, // shifty shafts
-                   { 110088, -115332, 17525 }, // Haunted Hills
-                   { 119126, -86354, 17525 }, // Junk Houses
-                   { 130036, -105092, 17525 }, // Junk Junction
-                   { -68000, -63521, 17525 }, // Flush Factory
-                   { 3502, -9183, 10500 }, // Salty Springs
-                   { 7760, 76702, 17525 }, //race track
-                   { 38374, -94726, 17525 }, //Soccer field
-                   { 70000, -40121, 17525 }, // Loot Lake
-                   { -123778, -112480, 17525 } //Spawn Island
+            { 24426, 37710, 25000 }, // retail row
+            { 50018, 73844, 25000 }, // lonely lodge
+            { 39781, 61621, 25000 }, // Moisty Mire
+            { 39781, 61621, 25000 }, // Moisty Mire DUPLICATE
+            { 39781, 61621, 25000 }, // Moisty Mire DUPLICATE
+            { 39781, 61621, 25000 }, // Moisty Mire DUPLICATE
+            { 39781, 61621, 25000 }, // Moisty Mire DUPLICATE
+            { -26479, 41847, 20000 }, // Prison
+            { -26479, 41847, 20000 }, // Prison DUPLICATE
+            { -26479, 41847, 20000 }, // Prison DUPLICATE
+            { 56771, 32818, 20000 }, // Containers/crates
+            { -75353, -8694, 20000 }, //Lucky Landing
+            { 34278, 867, 25000 }, // dusty depot / factories
+            { 79710, 15677, 25000 }, // tomato town
+            { 103901, -20203, 25000 }, // ANARCHY acres
+            { 86766, -83071, 25000 }, // pleasant park
+            { 2399, -96255, 25000 }, // greasy grove
+            { -35037, -463, 25000 }, // fatal fields
+            { 83375, 50856, 25000 }, // Wailing Woods
+            { 35000, -60121, 25000 }, // Tilted Towers
+            { 25000, -127121, 25000 }, // Snobby Shores
+            { 5000, -60121, 25000 }, // shifty shafts
+            { 110088, -115332, 25000 }, // Haunted Hills
+            { 119126, -86354, 25000 }, // Junk Houses
+            { 130036, -105092, 25000 }, // Junk Junction
+            { -68000, -63521, 25000 }, // Flush Factory
+            { 3502, -9183, 25000 }, // Salty Springs
+            { 7760, 76702, 25000 }, //race track
+            { 38374, -94726, 25000 }, //Soccer field
+            { 70000, -40121, 25000 }, // Loot Lake
+            //New Locations: 7/4/22
+            { 117215, -53654, 25000 }, //motel
+            { 117215, -53654, 25000 }, //motel DUPE
+            { 106521, -69597, 25000 }, //Pleasant Park Mountain
+            { 106521, -69597, 25000 }, //Pleasant Park Mountain DUPE
+            { 86980, -105015, 25000 }, //Pleasant Park Mountain 2
+            { 86980, -105015, 25000 }, //Pleasant Park Mountain 2 DUPE
+            { 76292, -104977, 25000 }, //Haunted/Pleasant House
+            { 76292, -104977, 25000 }, //Haunted/Pleasant House DUPE
+            { 56131, -106880, 25000 }, //Snobby Mountain (Before Villain Lair)
+            { 56131, -106880, 25000 }, //Snobby Mountain (Before Villain Lair) DUPE
+            { 29197, -109347, 25000 }, //Snobby Mountain 2
+            { 29197, -109347, 25000 }, //Snobby Mountain 2 DUPE
+            { -29734, -60767, 25000 }, //chair
+            { -29734, -60767, 25000 }, //chair DUPE
+            { -19903, -26194, 25000 }, //Grandma's house
+            { -19903, -26194, 25000 }, //Grandma's house DUPE
+            { -26851, 16299, 25000 }, //Tunnel near Fatal Fields
+            { -26851, 16299, 25000 }, //Tunnel near Fatal Fields DUPE
+            { -63592, 35933, 25000 }, //Random bush circle I've never seen before
+            { -63592, 35933, 25000 }, //Random bush circle I've never seen before DUPE
+            { -75810, 33594, 25000 }, //Crab behind Moisty
+            { -75810, 33594, 25000 }, //Crab behind Moisty DUPE
+            { 28374, -94726, 25000 }, //Soccer mountain
+            { 28374, -94726, 25000 }, //Soccer mountain DUPE
+            { 73770, -19009, 25000 }, //Random Location 1
+            { 73770, -19009, 25000 }, //Random Location 1 DUPE
+            { 29050, -21225, 25000 }, //Dusty Mountain
+            { 29050, -21225, 25000 }, //Dusty Mountain DUPE
+            { 18325, -17881, 25000 }, //Salty Mountain
+            { 18325, -17881, 25000 }, //Salty Mountain DUPE
+            { 6621, 18784, 25000 }, //Random Location 2
+            { 6621, 18784, 25000 }, //Random Location 2 DUPE
+            { -6702, 33251, 25000 }, //Random Location 3/bridge
+            { -6702, 33251, 25000 }, //Random Location 3/bridge DUPE
+            //Off map
+            { 137767, 40939, 25000 }, //off map near where risky would be
+            { 137767, 40939, 25000 }, //off map near where risky would be DUPE
+            { 136084, -46013, 25000 }, //off map near motel
+            { 136084, -46013, 25000 }, //off map near motel DUPE
+            { -2450, -127394, 25000 }, //off map bottom left
+            { -2450, -127394, 25000 }, //off map bottom left DUPE
+            { -26584, -90150, 25000 }, //off map bottom left 2
+            { -26584, -90150, 25000 }, //off map bottom left 2 DUPE
+            { -123778, -112480, 17525 } //Spawn Island
         };
 
         auto Location = Locations[rand() % Locations.size()];
@@ -225,6 +331,46 @@ namespace Inventory
         if (Dirty && Inventory.ReplicatedEntries.Num() >= Dirty)
             Inventory.MarkItemDirty(Inventory.ReplicatedEntries[Dirty]);
 
+    }
+
+    inline FFortItemEntry AddItemToSlotNew(AFortPlayerControllerAthena* Controller, UFortWorldItemDefinition* Definition, int Slot, EFortQuickBars Bars = EFortQuickBars::Primary, int Count = 1, int* Idx = nullptr)
+    {
+        if (!Controller || !Definition)
+            return FFortItemEntry();
+
+        if (Definition->IsA(UFortWeaponItemDefinition::StaticClass()))
+            Count = 1; // dont give more than 1 weapon to the same slot
+
+        if (Slot < 0)
+            Slot = 1;
+
+        if (Bars == EFortQuickBars::Primary && Slot >= 6)
+            Slot = 5;
+
+        auto& QuickBarSlots = Controller->QuickBars->PrimaryQuickBar.Slots;
+
+        auto TempItemInstance = (UFortWorldItem*)Definition->CreateTemporaryItemInstanceBP(Count, 1);
+
+        if (TempItemInstance)
+        {
+            TempItemInstance->SetOwningControllerForTemporaryItem(Controller);
+
+            TempItemInstance->ItemEntry.Count = Count;
+            TempItemInstance->OwnerInventory = Controller->WorldInventory;
+
+            auto& ItemEntry = TempItemInstance->ItemEntry;
+
+            auto _Idx = Controller->WorldInventory->Inventory.ReplicatedEntries.Add(ItemEntry);
+
+            Controller->WorldInventory->Inventory.ItemInstances.Add((UFortWorldItem*)TempItemInstance);
+            Controller->QuickBars->ServerAddItemInternal(ItemEntry.ItemGuid, Bars, Slot);
+
+            Inventory::Update(Controller, _Idx);
+
+            return ItemEntry;
+        }
+
+        return FFortItemEntry();
     }
 
     inline FFortItemEntry AddItem(AFortPlayerControllerAthena* Controller, UFortWorldItem* SlotInstance, int Slot, EFortQuickBars Bars = EFortQuickBars::Primary, int Count = 1)
@@ -649,8 +795,10 @@ namespace Inventory
             }
         }
     }
-	void Initialize(AFortPlayerControllerAthena* PlayerController)
-	{
+    
+
+    void Initialize(AFortPlayerControllerAthena* PlayerController)
+    {
         if (!PlayerController) return;
 
         PlayerController->QuickBars = Core::SpawnActor<AFortQuickBars>({ -280, 400, 3000 }, PlayerController);
@@ -673,34 +821,37 @@ namespace Inventory
         static auto Heavy = UObject::FindObjectFast<UFortItemDefinition>("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy");
         static auto Energy = UObject::FindObjectFast<UFortItemDefinition>("/Game/Athena/Items/Ammo/AthenaAmmoDataEnergyCell.AthenaAmmoDataEnergyCell");
 
-        
-
         AddNewItem(PlayerController, EditTool, 0, EFortQuickBars::Primary, 1);
         AddNewItem(PlayerController, Wall, 0, EFortQuickBars::Secondary, 1);
         AddNewItem(PlayerController, Floor, 1, EFortQuickBars::Secondary, 1);
         AddNewItem(PlayerController, Stair, 2, EFortQuickBars::Secondary, 1);
         AddNewItem(PlayerController, Cone, 3, EFortQuickBars::Secondary, 1);
 
-        AddNewItem(PlayerController, Wood, 0, EFortQuickBars::Secondary, 9999);
-        AddNewItem(PlayerController, Stone, 0, EFortQuickBars::Secondary, 9999);
-        AddNewItem(PlayerController, Metal, 0, EFortQuickBars::Secondary, 9999);
+        while (!Wall) {
+            Sleep(500); // no I'm not creating a new thread it's 500 ms it won't really matter
+            AddNewItem(PlayerController, Wall, 0, EFortQuickBars::Secondary, 1);
+        }
+
+        AddNewItem(PlayerController, Wood, 0, EFortQuickBars::Secondary, 600);
+        AddNewItem(PlayerController, Stone, 0, EFortQuickBars::Secondary, 500);
+        AddNewItem(PlayerController, Metal, 0, EFortQuickBars::Secondary, 200);
 
         AddNewItem(PlayerController, Rockets, 0, EFortQuickBars::Secondary, 9999);
-        AddNewItem(PlayerController, Shells, 0, EFortQuickBars::Secondary, 9999);
-        AddNewItem(PlayerController, Medium, 0, EFortQuickBars::Secondary, 9999);
-        AddNewItem(PlayerController, Light, 0, EFortQuickBars::Secondary, 9999);
-        AddNewItem(PlayerController, Heavy, 0, EFortQuickBars::Secondary, 9999);
+        AddNewItem(PlayerController, Shells, 0, EFortQuickBars::Secondary, 50);
+        AddNewItem(PlayerController, Medium, 0, EFortQuickBars::Secondary, 300);
+        AddNewItem(PlayerController, Light, 0, EFortQuickBars::Secondary, 300);
+        AddNewItem(PlayerController, Heavy, 0, EFortQuickBars::Secondary, 30);
         AddNewItem(PlayerController, Energy, 0, EFortQuickBars::Secondary, 9999);
 
         PlayerController->QuickBars->ServerActivateSlotInternal(EFortQuickBars::Primary, 0, 0, true, true);
 
         PlayerController->ActivateSlot(EFortQuickBars::Primary, 0, 0, true);
 
-        static auto Pickaxe = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Celestial.WID_Harvest_Pickaxe_Celestial");
+        static auto Pickaxe = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Tactical.WID_Harvest_Pickaxe_Tactical");
         auto entry = AddNewItem(PlayerController, Pickaxe, 0, EFortQuickBars::Primary, 1);
         EquipWeaponDefinition(PlayerController, Pickaxe, entry.ItemGuid, true);
 
-        static auto Scar = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Weapons/WID_Assault_Suppressed_Athena_SR_Ore_T03.WID_Assault_Suppressed_Athena_SR_Ore_T03");
+        static auto Scar = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
         entry = AddNewItem(PlayerController, Scar, 1, EFortQuickBars::Primary, 1);
         EquipWeaponDefinition(PlayerController, Scar, entry.ItemGuid, true);
 
@@ -715,7 +866,18 @@ namespace Inventory
         static auto Shock = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Consumables/ShockwaveGrenade/Athena_ShockGrenade.Athena_ShockGrenade");
         entry = AddNewItem(PlayerController, Shock, 4, EFortQuickBars::Primary, 4);
         EquipWeaponDefinition(PlayerController, Shock, entry.ItemGuid, true);
-        
+
+        static auto Mini = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall");
+        float Count = 0;
+        if (Globals::bisCreativeToolsEnabled) {
+           Mini = UObject::FindObjectFast<UFortWeaponItemDefinition>("/Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall");
+           Count = 1;
+        }
+        Count = 6;
+        entry = AddNewItem(PlayerController, Mini, 4, EFortQuickBars::Primary, Count);
+        EquipWeaponDefinition(PlayerController, Mini, entry.ItemGuid, true);
+
+
         Update(PlayerController, 0, true);
-	}
+    }
 }

@@ -1,6 +1,19 @@
 #pragma once
 
 FVector BusLocation;
+#include <Windows.h>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include "SDK/SDK.hpp"
+#include "minhook/minhook.h"
+#include "memory.h"
+#include "math.h"
+#include "core.h"
+
+#include "Globals.h"
+inline bool bRejoinEnabled = false;
 
 namespace Core
 {
@@ -162,6 +175,16 @@ namespace Core
 		static auto VehicleExit = UObject::FindClass("BlueprintGeneratedClass GA_AthenaExitVehicle.GA_AthenaExitVehicle_C");
 		static auto InVehicle = UObject::FindClass("BlueprintGeneratedClass GA_AthenaInVehicle.GA_AthenaInVehicle_C");
 
+		static auto Delete = UObject::FindClass("BlueprintGeneratedClass GA_Delete_Click.GA_Delete_Click_C");
+		static auto Rotate = UObject::FindClass("BlueprintGeneratedClass GA_RotateCounterclockwise_Click.GA_RotateCounterclockwise_Click_C");
+		static auto RetaçaoReverse = UObject::FindClass("BlueprintGeneratedClass GA_RotateClockwise_Click.GA_RotateClockwise_Click_C");
+		static auto Place = UObject::FindClass("BlueprintGeneratedClass GA_Place_Click.GA_Place_Click_C");
+		static auto Animation = UObject::FindClass("BlueprintGeneratedClass GA_MoveTool_PlayAnimation.GA_MoveTool_PlayAnimation_C");
+		static auto MoveTool = UObject::FindClass("BlueprintGeneratedClass GA_MoveTool_Empty.GA_MoveTool_Empty_C");
+		static auto Espelhar = UObject::FindClass("BlueprintGeneratedClass GA_Mirror_Click.GA_Mirror_Click_C");
+		static auto ClickFail = UObject::FindClass("BlueprintGeneratedClass GA_Failed_Click.GA_Failed_Click_C");
+		static auto ExitClick = UObject::FindClass("BlueprintGeneratedClass GA_Exit_Click.GA_Exit_Click_C");
+
 		GiveAbility(Pawn->AbilitySystemComponent, UFortGameplayAbility_Sprint::StaticClass()->CreateDefaultObject());
 		GiveAbility(Pawn->AbilitySystemComponent, UFortGameplayAbility_Reload::StaticClass()->CreateDefaultObject());
 		GiveAbility(Pawn->AbilitySystemComponent, UFortGameplayAbility_RangedWeapon::StaticClass()->CreateDefaultObject());
@@ -176,6 +199,17 @@ namespace Core
 		GiveAbility(Pawn->AbilitySystemComponent, VehicleExit->CreateDefaultObject());
 		GiveAbility(Pawn->AbilitySystemComponent, InVehicle->CreateDefaultObject());
 
+		if (Globals::bisCreativeToolsEnabled == true) {
+			GiveAbility(Pawn->AbilitySystemComponent, Delete->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, Rotate->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, RetaçaoReverse->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, Place->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, Animation->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, MoveTool->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, Espelhar->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, ClickFail->CreateDefaultObject());
+			GiveAbility(Pawn->AbilitySystemComponent, ExitClick->CreateDefaultObject());
+		}
 		return Pawn;
 	}
 
@@ -188,27 +222,48 @@ namespace Core
 		{
 			auto ObjectName = Object->GetFullName();
 			auto FunctionName = Function->GetFullName();
-
 			if (!bStartedMatch && strstr(FunctionName.c_str(), "ReadyToStartMatch"))
 			{
 				bStartedMatch = true;
-				std::cout << "READY TO STARTMATCH\n";
 
 				auto GameState = (AFortGameStateAthena*)GetWorld()->GameState;
 				auto GameMode = (AFortGameModeAthena*)GetWorld()->AuthorityGameMode;
 
-				GameState->bGameModeWillSkipAircraft = true;
-				GameState->AircraftStartTime = 9999.9f;
-				GameState->WarmupCountdownEndTime = 99999.9f;
+				GameState->bGameModeWillSkipAircraft = Globals::bWillSkipAircraft;
 
-				GameState->GamePhase = EAthenaGamePhase::Warmup;
-				GameState->OnRep_GamePhase(EAthenaGamePhase::None);
+				if (Globals::bIsWarmupCountdownEnabled == true)
+				{
+					GameState->AircraftStartTime = Globals::AircraftStartTime;
+					GameState->WarmupCountdownEndTime = Globals::WarmupCountdownEndTime;
+
+					GameState->GamePhase = EAthenaGamePhase::Warmup;
+					GameState->OnRep_GamePhase(EAthenaGamePhase::Warmup);
+				}
+				else
+				{
+					GameState->AircraftStartTime = 9999.9f;
+					GameState->WarmupCountdownEndTime = 99999.9f;
+
+					GameState->GamePhase = EAthenaGamePhase::Warmup;
+					GameState->OnRep_GamePhase(EAthenaGamePhase::None);
+				}
 
 				GameMode->bDisableGCOnServerDuringMatch = true;
-
 				GameMode->bEnableReplicationGraph = true;
 
 				auto Playlist = UObject::FindObjectFast<UFortPlaylistAthena>("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+
+				bRejoinEnabled = false;
+				if (Globals::isEventPlaying == true)
+				{
+					Playlist = UObject::FindObjectFast<UFortPlaylistAthena>("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
+					bRejoinEnabled = true;
+				}
+				else if (Globals::bPlaygroundEnabled) {
+					Playlist = UObject::FindObjectFast<UFortPlaylistAthena>("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground");
+					bRejoinEnabled = true;
+				}
+
 				if (!Playlist) return o_ProcessEvent(Object, Function, Parameters);
 
 				GameState->CurrentPlaylistId = Playlist->PlaylistId;
@@ -228,7 +283,7 @@ namespace Core
 
 				FString Error;
 				auto InURL = FURL();
-				InURL.Port = 7777;
+				InURL.Port = 25565;
 
 				InitListen(NewNetDriver, GetWorld(), InURL, true, Error);
 
@@ -252,7 +307,10 @@ namespace Core
 
 				GameState->OnRep_PlayersLeft();
 
-				std::cout << "Server is listening!\n";
+				
+
+				((UKismetSystemLibrary*)UKismetSystemLibrary::StaticClass())->STATIC_ExecuteConsoleCommand(GetWorld(), L"Athena.EnableParachuteEverywhere 1", nullptr);
+				std::cout << "[LOG]: Server is listening!\n";
 			}
 
 
@@ -289,13 +347,16 @@ namespace Core
 
 		if (GetAsyncKeyState(VK_F5) & 1)
 		{
-			for (int i = 0; i < NetDriver->ClientConnections.Num(); i++)
+			if (bStartedMatch && bRejoinEnabled == false)
 			{
-				auto PlayerController = (AFortPlayerControllerAthena*)NetDriver->ClientConnections[i]->PlayerController;
-				if (!PlayerController || PlayerController->PlayerState->bIsSpectator)
-					continue;
 
-				std::cout << "AmmoCount: " << ((AFortPlayerPawnAthena*)PlayerController->Pawn)->CurrentWeapon->AmmoCount << "\n";
+				bRejoinEnabled = true;
+				//auto EventPlayer = UObject::FindObjectFast<ULevelSequencePlayer>("LevelSequencePlayer Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer");
+				//EventPlayer->Play();
+			}
+			else if (bRejoinEnabled == false and bStartedMatch)
+			{
+				bRejoinEnabled = false;
 			}
 		}
 
@@ -303,19 +364,35 @@ namespace Core
 		{
 			auto GameState = (AFortGameStateAthena*)GetWorld()->GameState;
 			GameState->bGameModeWillSkipAircraft = false;
+
 			GameState->AircraftStartTime = 0;
 			GameState->WarmupCountdownEndTime = 0;
 			((AFortGameModeAthena*)GetWorld()->AuthorityGameMode)->bSafeZonePaused = true;
 
 			((UKismetSystemLibrary*)UKismetSystemLibrary::StaticClass())->STATIC_ExecuteConsoleCommand(GetWorld(), L"startaircraft", nullptr);
 
-			auto RandomLocation = Inventory::getRandomLocation();
-			BusLocation = RandomLocation;
+			bRejoinEnabled = false;
+			if (Globals::bIsLateGame)
+			{
+				bRejoinEnabled = false;
+				auto RandomLocation = Inventory::getRandomLocation();
+				BusLocation = RandomLocation;
+				GameState->GetAircraft(0)->FlightInfo.FlightStartLocation = FVector_NetQuantize100(RandomLocation);
+				GameState->GetAircraft(0)->FlightInfo.FlightSpeed = 0.0f;
+
+				//GameState->SafeZonesStartTime = 5.0f;
+			}
+
+			if (Globals::bPlaygroundEnabled)
+			{
+				bRejoinEnabled = true;
+			}
+
+			GameState->GamePhase = EAthenaGamePhase::Aircraft;
+			GameState->OnRep_GamePhase(EAthenaGamePhase::Aircraft);
+
+			//GameState->SafeZonesStartTime = 5.0f;
 			GameState->bAircraftIsLocked = false;
-			GameState->GetAircraft(0)->FlightInfo.FlightStartLocation = FVector_NetQuantize100(RandomLocation);
-			GameState->GetAircraft(0)->FlightInfo.FlightSpeed = 0.0f;
-
-
 		}
 
 		return o_TickFlush(NetDriver, DeltaSeconds);
@@ -350,17 +427,22 @@ namespace Core
 	}
 
 	inline int teamidx = 4;
-
 	inline APlayerController* (*o_SpawnPlayActor)(UWorld* World, UPlayer* NewPlayer, ENetRole RemoteRole, FURL& URL, FUniqueNetIdRepl UniqueId, SDK::FString& Error, uint8_t NetPlayerIndex);
 	inline APlayerController* hk_SpawnPlayActor(UWorld* World, UPlayer* NewPlayer, ENetRole RemoteRole, FURL& URL, FUniqueNetIdRepl UniqueId, SDK::FString& Error, uint8_t NetPlayerIndex)
 	{
 		auto PlayerController = (AFortPlayerControllerAthena*)o_SpawnPlayActor(GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex);
 
+		/*if (bStartedMatch && bRejoinEnabled == false) {
+			FText text = reinterpret_cast<UKismetTextLibrary*>(UKismetTextLibrary::StaticClass())->STATIC_Conv_StringToText(L"The match has started.");
+			PlayerController->ServerKickPlayer(UniqueId, text);
+			return NULL;
+		}*/
+
 		NewPlayer->PlayerController = PlayerController;
 		NewPlayer->CurrentNetSpeed = 30000;
 
 		auto PlayerState = (AFortPlayerStateAthena*)PlayerController->PlayerState;
-		std::wcout << L"Spawning Player: " << PlayerState->GetPlayerName().c_str() << L"\n";
+		std::wcout << L"Player joining, name:" << PlayerState->GetPlayerName().c_str() << L"\n";
 
 		auto Pawn = InitializePawn(PlayerController, GetPlayerStart(PlayerController).Translation);
 
@@ -386,10 +468,7 @@ namespace Core
 		PlayerState->CharacterParts.Parts[(uint8_t)EFortCustomPartType::Body] = Body;
 
 		//PlayerState->OnRep_CharacterParts();
-
-
 		Inventory::Initialize(PlayerController);
-
 
 		PlayerState->TeamIndex = EFortTeam(teamidx);
 
@@ -404,7 +483,7 @@ namespace Core
 
 		PlayerController->OverriddenBackpackSize = 100;
 
-		std::cout << "Spawned PlayerController: " << PlayerController << "\n";
+		//std::cout << "Spawned PlayerController: " << PlayerController << "\n";
 
 		return PlayerController;
 	}
@@ -419,18 +498,51 @@ namespace Core
 	void (*o_OnReload)(AFortWeapon* _this, unsigned int a2);
 	void hk_OnReload(AFortWeapon* _this, unsigned int a2)
 	{
-		o_OnReload(_this, a2);
-		/*
-		auto PlayerController = ((APawn*)_this->Owner)->Controller;
-		if (!PlayerController) return;
+	    o_OnReload(_this, a2);
+		auto Pawn = (AFortPlayerPawnAthena*)_this->GetOwner();
+		auto PlayerController = (AFortPlayerControllerAthena*)Pawn->Controller;
 
-		int AmmoToRemove = a2;
+		bool Successful = true;
 
-		//o_OnReload(_this, a2);
+		if (a2 && Successful && Globals::infAmmo == false)
+		{
+			auto AmmoDef = _this->WeaponData->GetAmmoWorldItemDefinition_BP();
+			// (strstr(_this->WeaponData->GetName().c_str(), "TID"))
+			if (!AmmoDef || (strstr(_this->WeaponData->GetName().c_str(), "TID")))
+				AmmoDef = _this->WeaponData;
 
-		if(_this->AmmoCount < _this->GetBulletsPerClip())
-			_this->AmmoCount += AmmoToRemove;
-		*/
+			auto Inventory = PlayerController->WorldInventory;
+
+			auto ReplicatedEntries = Inventory->Inventory.ReplicatedEntries;
+			auto ItemInstances = Inventory->Inventory.ItemInstances;
+
+			for (int i = 0; i < Inventory->Inventory.ReplicatedEntries.Num(); i++)
+			{
+				if (Inventory->Inventory.ReplicatedEntries[i].ItemDefinition == AmmoDef)
+				{
+					Inventory->Inventory.ReplicatedEntries[i].Count -= a2;
+					Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+					if (Inventory->Inventory.ReplicatedEntries[i].Count <= 0)
+					{
+						Inventory->Inventory.ReplicatedEntries.RemoveSingle(i);
+
+						for (int j = 0; j < ItemInstances.Num(); j++)
+						{
+							auto ItemInstance = ItemInstances[j];
+
+							if (ItemInstance && ItemInstance->GetItemDefinitionBP() == AmmoDef)
+							{
+								ItemInstances.RemoveSingle(i);
+								Inventory::Update(PlayerController, 0, true);
+							}
+						}
+					}
+
+					Inventory::Update(PlayerController, i, false);
+				}
+			}
+		}
 	}
 
 

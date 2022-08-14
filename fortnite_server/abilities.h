@@ -1,6 +1,7 @@
 #pragma once
 
 int PlayersJumpedFromBus = 0;
+#include "Globals.h"
 
 namespace Abilities
 {
@@ -222,6 +223,11 @@ namespace Abilities
 		return nullptr;
 	}
 
+	inline UKismetMathLibrary* GetMath()
+	{
+		return (UKismetMathLibrary*)UKismetMathLibrary::StaticClass();
+	}
+
 	inline AFortWeapon* EquipWeaponDefinition(AFortPlayerControllerAthena* PlayerController, UFortWeaponItemDefinition* Definition, FGuid Guid, bool bEquipWithMaxAmmo = false)
 	{
 		if (!PlayerController) return 0;
@@ -270,6 +276,46 @@ namespace Abilities
 
 		return Weapon;
 	}
+	inline void RemoveBuildingMaterials(AFortPlayerControllerAthena* PC, UClass* BuildingClass, int Amount = 10)
+	{
+		auto BuildingClassName = BuildingClass->GetName();
+
+		auto Inventory = PC->WorldInventory;
+
+		for (int i = 0; i < Inventory->Inventory.ReplicatedEntries.Num(); i++)
+		{
+			auto ItemDefinitionName = Inventory->Inventory.ReplicatedEntries[i].ItemDefinition->GetName();
+
+			if (strstr(BuildingClassName.c_str(), "W1") && strstr(ItemDefinitionName.c_str(), "WoodItemData"))
+			{
+				Inventory->Inventory.ReplicatedEntries[i].Count -= Amount;
+				Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+				Inventory::Update(PC, 0, true);
+				return;
+			}
+
+			if (strstr(BuildingClassName.c_str(), "S1") && strstr(ItemDefinitionName.c_str(), "StoneItemData"))
+			{
+				Inventory->Inventory.ReplicatedEntries[i].Count -= Amount;
+				Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+				Inventory::Update(PC, 0, true);
+				return;
+			}
+
+			if (strstr(BuildingClassName.c_str(), "M1") && strstr(ItemDefinitionName.c_str(), "MetalItemData"))
+			{
+				Inventory->Inventory.ReplicatedEntries[i].Count -= Amount;
+				Inventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+				Inventory::Update(PC, 0, true);
+				return;
+			}
+		}
+	}
+	bool canRejoin = false;
+
 	void Initialize(UObject* Object, UFunction* Function, void* Parameters, std::string ObjectName, std::string FunctionName)
 	{
 		if (!Core::bStartedMatch || !Core::GetWorld()->NetDriver) return;
@@ -336,9 +382,57 @@ namespace Abilities
 			}
 			else
 			{
-				FDeathInfo DeathInfo = { KillerPlayerState, false, EDeathCause::Banhammer };
+				FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::FallDamage };
+				for (int i = 0; i < Params->DeathReport.Tags.GameplayTags.Num(); i++)
+				{
+					auto TagName = Params->DeathReport.Tags.GameplayTags[i].TagName.ToString();
+					if (TagName == "weapon.ranged.shotgun") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Shotgun };
+					}
+					else if (TagName == "weapon.ranged.assault") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Rifle };
+					}
+					else if (TagName == "weapon.ranged.sniper") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Sniper };
+					}
+					else if (TagName == "weapon.ranged.heavy.rocket_launcher") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::RocketLauncher };
+					}
+					else if (TagName == "weapon.ranged.heavy.grenade_launcher") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::GrenadeLauncher };
+					}
+					else if (TagName == "Weapon.ranged.heavy.grenade") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Grenade };
+					}
+					else if (TagName == "Weapon.Ranged.Heavy.Minigun") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Minigun };
+					}
+					else if (TagName == "Weapon.Ranged.Crossbow") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Bow };
+					}
+					else if (TagName == "trap.floor") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Trap };
+					}
+					else if (TagName == "weapon.ranged.pistol") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Pistol };
+					}
+					else if (TagName == "Gameplay.Damage.OutsideSafeZone") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::OutsideSafeZone };
+					}
+					else if (TagName == "Weapon.Melee.Impact.Pickaxe") {
+						FDeathInfo DeathInfo = { DeadPlayerState, false, EDeathCause::Melee };
+					}
+				}
+				auto GameState = (AFortGameStateAthena*)GetWorld()->GameState;
+				if (Globals::bPlaygroundEnabled == false)
+				{
+					GameState->PlayersLeft--;
+				}
+
+				GameState->OnRep_PlayersLeft();
 
 				DeathInfo.Distance = KillerPawn->GetDistanceTo(DeadPawn);
+				DeathInfo.FinisherOrDowner = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 				DeathInfo.DeathLocation = DeadPawnLocation;
 
 				KillerPlayerState->ClientReportKill(DeadPlayerState);
@@ -351,6 +445,26 @@ namespace Abilities
 				KillerPlayerState->KillScore++;
 				KillerPlayerState->TeamKillScore++;
 				KillerPlayerState->OnRep_Kills();
+
+				if (KillerPawn->GetHealth() < 100 && KillerPawn->GetShield() == 0)
+				{
+
+					float newHealth = KillerPawn->GetHealth() + 50;
+					float healthToSet = NULL;
+					if (newHealth >= 100) {
+						healthToSet = newHealth - KillerPawn->GetHealth();
+						KillerPawn->SetHealth(100);
+						KillerPawn->SetShield(KillerPawn->GetShield() + healthToSet);
+					}
+					else if (newHealth < 100) {
+						KillerPawn->SetHealth(KillerPawn->GetHealth() + 50);
+					}
+				}
+				else if (KillerPawn->GetHealth() == 100 && KillerPawn->GetShield() < 100)
+				{
+					KillerPawn->SetShield(KillerPawn->GetShield() + 50);
+				}
+
 			}
 
 			if (DeadPlayerController->QuickBars && DeadPlayerController->WorldInventory)
@@ -368,8 +482,10 @@ namespace Abilities
 					ItemInstance->ItemEntry.LoadedAmmo = Weapon->GetBulletsPerClip();
 				}
 			}
-
-			std::thread(PlayerRespawnThread, DeadPlayerController, DeadPawnLocation).detach();
+			if (Globals::bPlaygroundEnabled)
+			{
+				std::thread(PlayerRespawnThread, DeadPlayerController, DeadPawnLocation).detach();
+			}
 		}
 		else if (strstr(FunctionName.c_str(), "ServerHandlePickup"))
 		{
@@ -405,6 +521,7 @@ namespace Abilities
 		else if (strstr(FunctionName.c_str(), "OnAircraftExitedDropZone"))
 		{
 			auto Connections = Core::GetWorld()->NetDriver->ClientConnections;
+			//GameState->SafeZonesStartTime = 1;
 
 			for (int i = 0; i < Connections.Num(); i++)
 			{
@@ -435,28 +552,48 @@ namespace Abilities
 		}
 		else if (strstr(FunctionName.c_str(), "ServerCreateBuildingActor"))
 		{
-			auto PlayerController = (AFortPlayerControllerAthena*)Object;
-			auto Params = (AFortPlayerController_ServerCreateBuildingActor_Params*)Parameters;
-			auto CurrentBuildClass = Params->BuildingClassData.BuildingClass;
+		  auto PlayerController = (AFortPlayerControllerAthena*)Object;
+		  auto Params = (AFortPlayerController_ServerCreateBuildingActor_Params*)Parameters;
+		  auto CurrentBuildClass = Params->BuildingClassData.BuildingClass;
 
-			auto GameState = (AFortGameStateAthena*)Core::GetWorld()->GameState;
+		  auto GameState = (AFortGameStateAthena*)Core::GetWorld()->GameState;
 
-			auto BuildingActor = (ABuildingSMActor*)Core::SpawnActor(Params->BuildingClassData.BuildingClass, Params->BuildLoc, PlayerController, Math::RotToQuat(Params->BuildRot), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-			if (!BuildingActor) return;
+		  auto BuildingActor = (ABuildingSMActor*)Core::SpawnActor(Params->BuildingClassData.BuildingClass, Params->BuildLoc, PlayerController, Math::RotToQuat(Params->BuildRot), ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+		  if (!BuildingActor) return;
 
-			if (CanBuild(BuildingActor))
+		  if (CanBuild(BuildingActor))
+		  {
+			BuildingActor->DynamicBuildingPlacementType = EDynamicBuildingPlacementType::DestroyAnythingThatCollides;
+			BuildingActor->SetMirrored(Params->bMirrored);
+			BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, PlayerController);
+			Inventory::RemoveBuildingMaterials(PlayerController, CurrentBuildClass);
+			BuildingActor->Team = ((AFortPlayerStateAthena*)PlayerController->PlayerState)->TeamIndex;
+			return;
+		  }
+
+		  //BuildingActor->K2_DestroyActor();
+		  BuildingActor->SetActorHiddenInGame(true);
+		  BuildingActor->SilentDie();
+		}
+		else if (strstr(FunctionName.c_str(), "OnDamagePlayEffects") || strstr(FunctionName.c_str(), "OnDeathPlayEffects"))
+		{
+		if (!Object->IsA(AFortPlayerPawnAthena::StaticClass()))
+		{
+			auto Params = (ABuildingActor_OnDamagePlayEffects_Params*)Parameters;
+			if (Params->InstigatedBy)
 			{
-				BuildingActor->DynamicBuildingPlacementType = EDynamicBuildingPlacementType::DestroyAnythingThatCollides;
-				BuildingActor->SetMirrored(Params->bMirrored);
-				BuildingActor->InitializeKismetSpawnedBuildingActor(BuildingActor, PlayerController, 0);
-				Inventory::RemoveBuildingMaterials(PlayerController, CurrentBuildClass);
-				BuildingActor->Team = ((AFortPlayerStateAthena*)PlayerController->PlayerState)->TeamIndex;
-				return;
-			}
+				auto Controller = (AFortPlayerControllerAthena*)Params->InstigatedBy->Controller;
+				// if (Controller->WeakspotUnderReticle.IsValid())
+				// LOG_INFO("WeakSpot Valid");
 
-			//BuildingActor->K2_DestroyActor();
-			BuildingActor->SetActorHiddenInGame(true);
-			BuildingActor->SilentDie();
+				if (Controller && Params->DamageCauser->GetFullName().find("Melee") != -1)
+				{
+					auto Obj = (ABuildingSMActor*)Object;
+					if (Obj->bPlayerPlaced != true)
+						Controller->ClientReportDamagedResourceBuilding(Obj, Obj->ResourceType, GetMath()->STATIC_RandomFloatInRange(5, 11), Function->GetName() == "OnDeathPlayEffects" ? true : false, false);
+				}
+			}
+		}
 		}
 		else if (strstr(FunctionName.c_str(), "ServerRepairBuildingActor"))
 		{
@@ -467,7 +604,140 @@ namespace Abilities
 
 			Params->BuildingActorToRepair->RepairBuilding(PlayerController, 20); //todo: not hardcode it here
 		}
+		else if (strstr(FunctionName.c_str(), "ClientReportDamagedResourceBuilding"))
+		{
+		auto Controller = (AFortPlayerControllerAthena*)Object;
+		auto Params = (AFortPlayerController_ClientReportDamagedResourceBuilding_Params*)Parameters;
+		auto ResourceType = Params->PotentialResourceType.GetValue();
+		UFortResourceItemDefinition* WorldItemDefinition = nullptr;
+		static auto WoodDefinition =  UObject::FindObjectFast<UFortResourceItemDefinition>(Inventory::ResourcePool[0]);
+		static auto StoneDefinition = UObject::FindObjectFast<UFortResourceItemDefinition>(Inventory::ResourcePool[1]);
+		static auto MetalDefinition = UObject::FindObjectFast<UFortResourceItemDefinition>(Inventory::ResourcePool[2]);
 
+		switch (ResourceType)
+		{
+		case EFortResourceType::Wood:
+			WorldItemDefinition = WoodDefinition;
+			break;
+		case EFortResourceType::Stone:
+			WorldItemDefinition = StoneDefinition;
+			break;
+		case EFortResourceType::Metal:
+			WorldItemDefinition = MetalDefinition;
+			break;
+		}
+
+		bool bFound = false;
+
+		if (WorldItemDefinition)
+		{
+			for (int i = 0; i < Controller->WorldInventory->Inventory.ReplicatedEntries.Num(); i++)
+			{
+				if (Controller->WorldInventory->Inventory.ReplicatedEntries[i].ItemDefinition == WorldItemDefinition)
+				{
+					bFound = true;
+					Controller->WorldInventory->Inventory.ReplicatedEntries[i].Count += Params->PotentialResourceCount;
+					Controller->WorldInventory->Inventory.ReplicatedEntries[i].ReplicationKey++;
+
+					if (Controller->WorldInventory->Inventory.ReplicatedEntries[i].Count <= 0)
+					{
+						Controller->WorldInventory->Inventory.ReplicatedEntries.RemoveSingle(i);
+
+						for (int j = 0; j < Controller->WorldInventory->Inventory.ItemInstances.Num(); j++)
+						{
+							auto ItemInstance = Controller->WorldInventory->Inventory.ItemInstances[j];
+
+							if (ItemInstance && ItemInstance->GetItemDefinitionBP() == WorldItemDefinition)
+							{
+								Controller->WorldInventory->Inventory.ItemInstances.RemoveSingle(i);
+								break;
+							}
+							else
+								continue;
+						}
+					}
+					else if (Controller->WorldInventory->Inventory.ReplicatedEntries[i].Count > 999)
+					{
+						Core::SummonPickup(WorldItemDefinition, 999, Controller->Pawn->K2_GetActorLocation(), EFortPickupSourceTypeFlag::Tossed, EFortPickupSpawnSource::Unset);
+					//	Core::SummonPickup(Controller->Pawn->K2_GetActorLocation(), WorldItemDefinition, Controller->WorldInventory->Inventory.ReplicatedEntries[i].Count - 999);
+						Controller->WorldInventory->Inventory.ReplicatedEntries[i].Count = 999;
+						Inventory::Update(Controller, 0, true);
+					}
+
+					Inventory::Update(Controller, 0, true);
+					break;
+				}
+				else
+					continue;
+			}
+
+			if (!bFound)
+			{
+				for (int i = 0; i < Controller->QuickBars->SecondaryQuickBar.Slots.Num(); i++)
+				{
+					if (!Controller->QuickBars->SecondaryQuickBar.Slots[i].Items.Data) // Checks if the slot is empty
+					{
+						Inventory::AddItemToSlotNew(Controller, WorldItemDefinition, i, EFortQuickBars::Secondary, Params->PotentialResourceCount);
+						break;
+					}
+				}
+			}
+		}
+		}
+		else if (strstr(FunctionName.c_str(), "Function SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange") || strstr(FunctionName.c_str(), "SafeZoneIndicator_C.OnSafeZoneStateChange") || strstr(FunctionName.c_str(), "SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange") || strstr(FunctionName.c_str(), "OnSafeZoneStateChange"))
+		{
+		if (Globals::bIsLateGame == false) {
+			return;
+		}
+		float shrinkTime = NULL;
+		auto Indicator = (AFortSafeZoneIndicator*)Object;
+		auto IdkThisMightWork = (AFortMissionStormSafeZone*)Object;
+		auto SafeZonePhase = ((AFortGameModeAthena*)GetWorld()->AuthorityGameMode)->SafeZonePhase;
+		auto GameState = (AFortGameStateAthena*)GetWorld()->GameState;
+		auto GameMode = (AFortGameModeAthena*)GetWorld()->AuthorityGameMode;
+		Indicator->NextCenter = (FVector_NetQuantize100)BusLocation;
+
+		switch (SafeZonePhase)
+		{
+		case 0:
+			shrinkTime = 16;
+			Indicator->Radius = 15000;
+			Indicator->NextRadius = 11000;
+			Indicator->SafeZoneFinishShrinkTime = shrinkTime;
+			IdkThisMightWork->OnRep_ZoneRadius();
+			break;
+		case 1:
+			shrinkTime = 15;
+			Indicator->NextRadius = 7000;
+			Indicator->SafeZoneFinishShrinkTime = shrinkTime;
+			IdkThisMightWork->OnRep_ZoneRadius();
+			break;
+		case 2:
+			shrinkTime = 12;
+			Indicator->NextRadius = 4000;
+			Indicator->SafeZoneFinishShrinkTime = shrinkTime;
+			IdkThisMightWork->OnRep_ZoneRadius();
+			break;
+		case 3:
+			shrinkTime = 7;
+			Indicator->NextRadius = 1000;
+			Indicator->SafeZoneFinishShrinkTime = shrinkTime;
+			IdkThisMightWork->OnRep_ZoneRadius();
+			break;
+		case 4:
+			shrinkTime = 5;
+			Indicator->NextRadius = 500;
+			Indicator->SafeZoneFinishShrinkTime = shrinkTime;
+			IdkThisMightWork->OnRep_ZoneRadius();
+			break;
+		default:
+			shrinkTime = 3;
+			Indicator->NextRadius = 50;
+			Indicator->SafeZoneFinishShrinkTime = shrinkTime;
+			IdkThisMightWork->OnRep_ZoneRadius();
+			break;
+		  }
+		}
 
 		else if (strstr(FunctionName.c_str(), "ServerAttemptInteract"))
 		{
@@ -611,7 +881,7 @@ namespace Abilities
 					if (auto NewBuildingActor = (ABuildingSMActor*)SpawnActorByClass(NewBuildingClass, location, rotation, PC))
 					{
 						if (!bWasInitiallyBuilding)
-							NewBuildingActor->ForceBuildingHealth(NewBuildingActor->GetMaxHealth() * HealthPercent);
+						NewBuildingActor->ForceBuildingHealth(HealthPercent);
 
 						NewBuildingActor->SetMirrored(Params->bMirrored);
 						NewBuildingActor->InitializeKismetSpawnedBuildingActor(NewBuildingActor, PC, 0);
