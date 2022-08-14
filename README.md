@@ -4,7 +4,9 @@
 This is an Fortnite Gameserver for 7.30! Please do not leak it or someone will go into your house at 3 AM.
 
 
-Cr to Ozne For Some Code i Stole From Ozraider!
+# Credits:
+Jaiz 
+OzRaider/AveryRaider
 
-
+# And
 Nintendosss Is gay
