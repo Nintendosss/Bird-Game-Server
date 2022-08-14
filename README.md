@@ -5,7 +5,9 @@ This is an Fortnite Gameserver for 7.30! Please do not leak it or someone will g
 
 
 # Credits:
-Jaiz 
+Jaiz
+
+
 OzRaider/AveryRaider
 
 # And
