@@ -6,7 +6,8 @@ This is an Modified Fortnite Gameserver for 7.30! Please do not leak it or someo
 
 # Credits:
 Jaiz
-
+Custox
+Uni!
 
 OzRaider/AveryRaider
 
